@@ -1,1 +1,11 @@
-
+{
+  "name": "canyon-stock-watcher",
+  "version": "1.0.0",
+  "scripts": {
+    "check": "node check.js"
+  },
+  "dependencies": {
+    "playwright": "^1.44.0",
+    "node-fetch": "^3.3.2"
+  }
+}
