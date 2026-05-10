@@ -45,8 +45,8 @@ async function checkBike(page, bike) {
   }
 
   if (!offers.length) {
-    console.log('  ⚠️ Aucune offre trouvée dans le JSON-LD.');
-    return;
+    console.log('  ⚠️ Aucune offre trouvée.');
+    return { name: bike.name, status: 'erreur' };
   }
 
   const sizeRegex = new RegExp(`\\| ${TARGET_SIZE}$`);
@@ -55,32 +55,30 @@ async function checkBike(page, bike) {
 
   targets.forEach(o => {
     const status = o.availability.split('/').pop();
-    const emoji = status === 'InStock' ? '✅' : status === 'PreOrder' ? '🟡' : '❌';
+    const emoji = status === 'InStock' ? '✅' : '❌';
     console.log(`  ${emoji} ${o.name} : ${status}`);
   });
-
-  if (!targets.length) {
-    console.log(`  ⚠️ Combinaison ${bike.couleur} / ${TARGET_SIZE} introuvable dans le JSON-LD.`);
-    return;
-  }
 
   if (inStock.length > 0) {
     console.log(`  🚨 EN STOCK !`);
     await sendTelegram(
       `🚨 <b>${bike.name} taille ${TARGET_SIZE} — EN STOCK !</b>\n\n` +
       `👉 Fonce : ${bike.url}\n` +
-      `🕐 Détecté à : ${new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' })}`
+      `🕐 ${new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' })}`
     );
-  } else {
-    console.log(`  😴 Toujours en rupture.`);
+    return { name: bike.name, status: 'instock' };
   }
+
+  return { name: bike.name, status: 'rupture' };
 }
 
 async function main() {
-  console.log(`=== Canyon Stock Checker [${new Date().toISOString()}] ===`);
+  const now = new Date();
+  const heureStr = now.toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
+  console.log(`=== Canyon Stock Checker [${now.toISOString()}] ===`);
 
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) {
-    console.error('❌ Variables manquantes. Vérifie TELEGRAM_TOKEN et TELEGRAM_CHAT_ID.');
+    console.error('❌ Variables manquantes.');
     process.exit(1);
   }
 
@@ -91,16 +89,33 @@ async function main() {
   });
   const page = await context.newPage();
 
+  const results = [];
   for (const bike of BIKES) {
     try {
-      await checkBike(page, bike);
+      const result = await checkBike(page, bike);
+      results.push(result);
     } catch (err) {
       console.error(`  ❌ Erreur sur ${bike.name} :`, err.message);
-      await sendTelegram(`⚠️ Erreur Canyon checker (${bike.name}) :\n<code>${err.message}</code>`).catch(() => {});
+      results.push({ name: bike.name, status: 'erreur' });
+      await sendTelegram(`⚠️ Erreur checker (${bike.name}) :\n<code>${err.message}</code>`).catch(() => {});
     }
   }
 
   await browser.close();
+
+  // Résumé quotidien à 9h CET uniquement
+  const heureParis = now.toLocaleString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' });
+  const estNeufHeure = heureParis.startsWith('09:0');
+
+  if (estNeufHeure) {
+    const lignes = results.map(r =>
+      r.status === 'instock' ? `✅ ${r.name} : EN STOCK !` :
+      r.status === 'erreur'  ? `⚠️ ${r.name} : erreur` :
+                               `❌ ${r.name} : rupture`
+    ).join('\n');
+    await sendTelegram(`🤖 <b>Résumé quotidien — ${heureStr}</b>\n\n${lignes}\n\n<i>Le bot tourne bien toutes les 5 min.</i>`);
+  }
+
   console.log('\n✅ Check terminé.');
 }
 
