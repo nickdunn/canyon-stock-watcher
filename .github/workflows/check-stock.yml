@@ -2,8 +2,14 @@ name: Canyon Stock Check
 
 "on":
   schedule:
-    - cron: '*/5 * * * *'
+    # Every 15 minutes, offset from :00 because GitHub delays runs on the hour.
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
+    inputs:
+      force_summary:
+        description: 'Send the daily summary now (handy for testing notifications)'
+        type: boolean
+        default: false
 
 jobs:
   check:
@@ -23,7 +29,9 @@ jobs:
 
       - name: Run stock check
         env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TARGET_SIZE: ${{ secrets.TARGET_SIZE }}
+          TARGET_SIZE: ${{ vars.TARGET_SIZE || 'S' }}
+          FORCE_SUMMARY: ${{ inputs.force_summary }}
         run: node check.js
