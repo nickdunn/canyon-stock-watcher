@@ -65,13 +65,35 @@ function extractOffers(html) {
   return offers;
 }
 
+function logDiagnostics(resp, title, html) {
+  console.log('--- diagnostics ---');
+  console.log('HTTP status:', resp && resp.status(), '| title:', title, '| html length:', html.length);
+  const ld = [...html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/g)];
+  console.log('ld+json blocks:', ld.length);
+  ld.forEach((m, i) => console.log(`ld[${i}]:`, m[1].replace(/\s+/g, ' ').slice(0, 600)));
+  const uniq = re => [...new Set([...html.matchAll(re)].map(m => m[0]))].slice(0, 30);
+  console.log('colour params:', uniq(/dwvar_\d+_pv_rahmenfarbe=[A-Za-z0-9_]+/g));
+  console.log('size attrs:', uniq(/data-product-size="[^"]*"/g));
+  console.log('availability classes:', uniq(/productConfiguration__[A-Za-z]*[Aa]vailab[A-Za-z_-]*/g));
+  const i = html.indexOf('data-product-size="S"');
+  if (i > -1) console.log('size S markup:', html.slice(Math.max(0, i - 800), i + 1500).replace(/\s+/g, ' '));
+  const j = html.search(/Champagne/i);
+  if (j > -1) console.log('Champagne markup:', html.slice(Math.max(0, j - 600), j + 400).replace(/\s+/g, ' '));
+  if (html.length < 20000) console.log('full html:', html.replace(/\s+/g, ' ').slice(0, 4000));
+  console.log('--- end diagnostics ---');
+}
+
 async function checkBike(page, bike) {
   console.log(`\nChecking ${bike.name}, size ${TARGET_SIZE}`);
-  await page.goto(bike.url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  const resp = await page.goto(bike.url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForTimeout(4000);
 
-  const offers = extractOffers(await page.content());
-  if (!offers.length) throw new Error('No product offers found on the page (blocked, or the page layout changed).');
+  const html = await page.content();
+  const offers = extractOffers(html);
+  if (!offers.length) {
+    if (process.env.DEBUG === 'true') logDiagnostics(resp, await page.title(), html);
+    throw new Error('No product offers found on the page (blocked, or the page layout changed).');
+  }
 
   const sizeRegex = new RegExp(`\\|\\s*${TARGET_SIZE}\\s*$`, 'i');
   const colourLower = bike.colour.toLowerCase();

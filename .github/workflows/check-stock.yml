@@ -10,6 +10,10 @@ name: Canyon Stock Check
         description: 'Send the daily summary now (handy for testing notifications)'
         type: boolean
         default: false
+      debug:
+        description: 'Log page diagnostics if the check fails'
+        type: boolean
+        default: false
 
 jobs:
   check:
@@ -34,4 +38,5 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TARGET_SIZE: ${{ vars.TARGET_SIZE || 'S' }}
           FORCE_SUMMARY: ${{ inputs.force_summary }}
+          DEBUG: ${{ inputs.debug }}
         run: node check.js
