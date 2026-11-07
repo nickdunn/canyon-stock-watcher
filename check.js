@@ -49,13 +49,22 @@ async function notify({ title, message, url, priority = 'default' }) {
   await Promise.allSettled(sends);
 }
 
-// Pull every Offer out of the page's JSON-LD, whatever shape it comes in.
+// Pull every variant's name and availability out of the page's JSON-LD.
+// Canyon now publishes a ProductGroup whose variants are Products named
+// "Model | Colour | Size", each with its own Offer. Older pages had named
+// Offers directly, so both shapes are handled.
 function extractOffers(html) {
   const offers = [];
   const blocks = [...html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/g)];
   const walk = node => {
     if (!node || typeof node !== 'object') return;
     if (Array.isArray(node)) return node.forEach(walk);
+    if (node['@type'] === 'Product' && node.name && node.offers) {
+      [].concat(node.offers).forEach(o =>
+        offers.push({ name: node.name, availability: o.availability, url: node.url || o.url })
+      );
+      return;
+    }
     if (node['@type'] === 'Offer' && node.name) offers.push(node);
     Object.values(node).forEach(walk);
   };
@@ -105,14 +114,15 @@ async function checkBike(page, bike) {
   }
 
   targets.forEach(o => console.log(`  ${o.name}: ${String(o.availability).split('/').pop()}`));
-  const inStock = targets.some(o => /InStock$/.test(String(o.availability)));
+  const hit = targets.find(o => /InStock$/.test(String(o.availability)));
+  const inStock = Boolean(hit);
 
   if (inStock) {
     console.log('  IN STOCK');
     await notify({
       title: `${bike.name} (${TARGET_SIZE}) is in stock`,
       message: `It's available to order now. Checked ${new Date().toLocaleString('en-GB', { timeZone: TIME_ZONE })}.`,
-      url: bike.url,
+      url: hit.url || bike.url,
       priority: 'urgent',
     });
   }
