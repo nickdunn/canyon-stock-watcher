@@ -6,7 +6,7 @@ Currently watching: Endurace CF SLX 8 Di2, Champagne, size S (en-gb store).
 
 ## How it works
 
-A headless Chromium loads the product page and reads the product data Canyon embeds in it (JSON-LD offers, one per colour and size). If the matching offer is marked `InStock`, you get an alert. You also get one low-priority message a day around 9am UK time, so you know it's still running and can see any errors.
+A headless Chromium loads the product page and reads the product data Canyon embeds in it (JSON-LD offers, one per colour and size). If the matching offer is marked `InStock` or `PreOrder` (orderable now, delivered later), you get an alert. You also get one low-priority message a day around 9am UK time, so you know it's still running and can see any errors.
 
 ## Setup
 

@@ -114,14 +114,16 @@ async function checkBike(page, bike) {
   }
 
   targets.forEach(o => console.log(`  ${o.name}: ${String(o.availability).split('/').pop()}`));
-  const hit = targets.find(o => /InStock$/.test(String(o.availability)));
+  // InStock ships now; PreOrder can be ordered now with a later delivery date.
+  const hit = targets.find(o => /(InStock|PreOrder)$/.test(String(o.availability)));
   const inStock = Boolean(hit);
 
   if (inStock) {
-    console.log('  IN STOCK');
+    const preOrder = /PreOrder$/.test(String(hit.availability));
+    console.log(preOrder ? '  AVAILABLE TO PRE-ORDER' : '  IN STOCK');
     await notify({
-      title: `${bike.name} (${TARGET_SIZE}) is in stock`,
-      message: `It's available to order now. Checked ${new Date().toLocaleString('en-GB', { timeZone: TIME_ZONE })}.`,
+      title: `${bike.name} (${TARGET_SIZE}) ${preOrder ? 'can be pre-ordered' : 'is in stock'}`,
+      message: `${preOrder ? 'You can order it now; check the site for the delivery date.' : "It's available to order now."} Checked ${new Date().toLocaleString('en-GB', { timeZone: TIME_ZONE })}.`,
       url: hit.url || bike.url,
       priority: 'urgent',
     });
