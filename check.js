@@ -159,19 +159,19 @@ async function main() {
   await browser.close();
 
   // One message a day around 9am UK time so you know it's still running,
-  // and so any persistent errors get noticed without an alert every 15 minutes.
+  // and so any persistent errors get noticed without an alert every 10 minutes.
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat('en-GB', { timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
       .formatToParts(now).map(p => [p.type, p.value])
   );
-  const isMorningRun = parts.hour === '09' && Number(parts.minute) < 15;
+  const isMorningRun = parts.hour === '09' && Number(parts.minute) < 10;
   if (isMorningRun || process.env.FORCE_SUMMARY === 'true') {
     const lines = results.map(r =>
       r.status === 'instock' ? `${r.name}: IN STOCK` :
       r.status === 'error' ? `${r.name}: error (${r.error})` :
       `${r.name}: not in stock yet`
     ).join('\n');
-    await notify({ title: 'Canyon stock checker: daily update', message: `${lines}\n\nChecking every 15 minutes.`, priority: 'low' });
+    await notify({ title: 'Canyon stock checker: daily update', message: `${lines}\n\nChecking every 10 minutes.`, priority: 'low' });
   }
 
   console.log('\nDone.');

@@ -1,6 +1,6 @@
 # canyon-stock-watcher
 
-Checks a Canyon bike page every 15 minutes on GitHub Actions and sends a push notification when a given colour and size is in stock and can be ordered. Forked from [sashadbr/canyon-stock-watcher](https://github.com/sashadbr/canyon-stock-watcher).
+Checks a Canyon bike page every 10 minutes on GitHub Actions and sends a push notification when a given colour and size is in stock and can be ordered. Forked from [sashadbr/canyon-stock-watcher](https://github.com/sashadbr/canyon-stock-watcher).
 
 Currently watching: Endurace CF SLX 8 Di2, Champagne, size S (en-gb store).
 
@@ -19,6 +19,6 @@ To watch a different bike or colour, edit `BIKES` in `check.js`.
 
 ## Notes
 
-- While the bike is in stock you'll get an alert on every run (every 15 minutes) until it sells out or you disable the workflow.
+- While the bike is in stock you'll get an alert on every run (every 10 minutes) until it sells out or you disable the workflow.
 - GitHub turns off scheduled workflows after 60 days with no activity in the repo. Re-enable it from the Actions tab if that happens.
 - Scheduled runs can be delayed by a few minutes when GitHub is busy.
